@@ -63,7 +63,7 @@
         document.getElementById('passed-count').textContent = data.summary.passed;
         document.getElementById('failed-count').textContent = data.summary.failed;
         document.getElementById('errors-count').textContent = data.summary.data_errors;
-        document.getElementById('rules').textContent = `① 10日内涨停　② 5日内首次回踩MA10　③ 30分钟MACD回抽0轴不超过 ${data.max_pullbacks} 次　④ 5分钟形成向下笔中枢`;
+        document.getElementById('rules').textContent = `① 10日内涨停　② 5日内首次回踩MA10　③ 日线上涨一笔不超过 ${data.max_daily_rise_days} 天　④ 30分钟MACD回抽0轴不超过 ${data.max_pullbacks} 次　⑤ 5分钟形成向下笔中枢`;
         for (const [id, rows] of [['passed',data.passed],['failed',data.failed]]) { const box=document.getElementById(id); box.replaceChildren(table(rows)); }
       } catch (error) {
         document.getElementById('meta').textContent = error.message;
