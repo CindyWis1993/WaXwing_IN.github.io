@@ -12,6 +12,7 @@ body{font-family:"Microsoft YaHei",sans-serif;background:#f6f8fb;color:#172033;m
 .focus-vote-table th,.focus-vote-table td{text-align:left;white-space:nowrap}
 .focus-watch details{font-size:14px;color:#475569;line-height:1.7}.focus-watch summary{cursor:pointer;color:#1d4ed8}
 .focus-review{padding:10px 12px;border-left:3px solid #2563eb;background:#eff6ff;margin:8px 0;font-size:14px;line-height:1.8}
+.focus-history-row{background:#fff7ed}.focus-history-badge{display:inline-flex;padding:3px 8px;border:1px solid #f59e0b;border-radius:999px;background:#fef3c7;color:#92400e;font-weight:700}
 </style></head><body><main><h1>新模型选股推荐</h1><div id="meta" class="meta"></div><section id="focusWatch" class="focus-watch" aria-label="下一交易日重点盯盘"></section><div class="review-bar"><button id="openPerformance" class="review-btn" type="button">历史命中复盘 <span id="performanceCount" class="review-count">0</span></button><span id="performanceBrief" class="review-brief">点击查看最近3个工作日</span></div><div id="performanceModal" class="modal hide" role="dialog" aria-modal="true" aria-labelledby="performanceTitle"><div class="modal-panel"><div class="modal-head"><h2 id="performanceTitle">历史命中复盘</h2><button id="closePerformance" class="modal-close" type="button" aria-label="关闭">×</button></div><div id="performance" class="modal-body"></div></div></div><div class="gate" id="ruleGate"><label for="rulePass">模型条件</label><input id="rulePass" type="password" inputmode="numeric" autocomplete="current-password" placeholder="输入口令"><button id="unlockRules" type="button">查看</button><span id="ruleMsg">条件已隐藏</span></div><div class="tabs"><button data-tab="focus" class="on">重点模型</button><button data-tab="strict">严格条件</button><button data-tab="long">中线</button></div><div id="content"></div><script>
 
 function drawFocus(payload){
@@ -19,7 +20,7 @@ function drawFocus(payload){
     if(!f){box.innerHTML='<h2>下一交易日重点盯盘</h2><p class="focus-note">本期尚未生成重点名单，等待下一次正式扫描。</p>';return}
     const preview=payload.is_intraday_preview||f.status==='preview';
     const price=value=>Number(value).toFixed(2);
-    const cards=(f.picks||[]).map(p=>`<article class="focus-card"><h3>${esc(p['重点排名'])}. ${esc(p['名称'])} <small>${esc(p['代码'])}</small></h3><span class="badge">${esc(p['模型'])} · 原排名 ${esc(p['原排名'])}${p['历史近邻Top3']&&p['历史近邻Top3']['可排序']?' · 近邻投票'+esc(p['历史近邻Top3']['近邻综合分']):p['形态相似度']!==null&&p['形态相似度']!==undefined?' · 形态'+esc(p['形态相似度']):''}${p['缩量蓄势匹配']?' · 缩量蓄势5/5':''}</span><ul>${p['入选依据'].map(r=>`<li>${esc(r)}</li>`).join('')}</ul><p class="focus-level"><strong>转强观察：</strong>站上信号日高点 ${price(p['信号高点'])} 后，观察回踩能否守住。</p><p><strong>均线参照：</strong>${esc(p['均线'])} ${price(p['均线值'])}，${p['检查']['收在均线上']?'失守则降低优先级':'目前尚未站回，先等待修复'}；跌破信号日低点 ${price(p['信号低点'])} 取消本轮观察。</p></article>`).join('');
+    const cards=(f.picks||[]).map(p=>`<article class="focus-card"><h3>${esc(p['重点排名'])}. ${esc(p['名称'])} <small>${esc(p['代码'])}</small></h3><span class="badge">${esc(p['模型'])} · 原排名 ${esc(p['原排名'])}${p['历史近邻Top3']&&p['历史近邻Top3']['可排序']?' · 近邻投票'+esc(p['历史近邻Top3']['近邻综合分']):p['形态相似度']!==null&&p['形态相似度']!==undefined?' · 形态'+esc(p['形态相似度']):''}${p['缩量蓄势匹配']?' · 缩量蓄势5/5':''}${p['20日强趋势匹配']?' · 强趋势再加速5/5':''}</span><ul>${p['入选依据'].map(r=>`<li>${esc(r)}</li>`).join('')}</ul><p class="focus-level"><strong>转强观察：</strong>站上信号日高点 ${price(p['信号高点'])} 后，观察回踩能否守住。</p><p><strong>均线参照：</strong>${esc(p['均线'])} ${price(p['均线值'])}，${p['检查']['收在均线上']?'失守则降低优先级':'目前尚未站回，先等待修复'}；跌破信号日低点 ${price(p['信号低点'])} 取消本轮观察。</p></article>`).join('');
     const votePicks=(f.ma10_neighbor_watch||[]).filter(p=>p['历史近邻Top3']&&p['历史近邻Top3']['可排序']);
     const voteTable=votePicks.length?`<div class="focus-vote-table"><h3>10日线Top3近邻投票对照</h3><p class="focus-note">独立展示10日线组内前三，不改变上方最终重点名单。</p><table><thead><tr><th>当前票</th><th>Top3历史样本</th><th>次日上涨率</th><th>次日涨停率</th><th>最大回撤</th></tr></thead><tbody>${votePicks.map(p=>{const v=p['历史近邻Top3'],names=v['历史样本'].map(s=>`${esc(s['名称'])} ${Number(s['次日涨跌幅%'])>=0?'+':''}${esc(s['次日涨跌幅%'])}%`).join(' / ');return `<tr><td>${esc(p['近邻排名'])}. ${esc(p['名称'])}</td><td>${names}</td><td>${esc(v['次日上涨率%'])}%</td><td>${esc(v['次日涨停率%'])}%</td><td>${esc(v['次日盘中最大回撤%'])}%</td></tr>`}).join('')}</tbody></table></div>`:'';
     const replay=payload.report_type==='rule_replay';
@@ -93,14 +94,16 @@ function performanceSummary(rows){
     };
 }
 const performancePercent=value=>value==null?'—':`${value}%`;
-function performanceTable(rows){
+function performanceTable(rows,review=null){
     if(!rows.length)return `<p>当日无${esc(performanceModel)}正式入选股票。</p>`;
-    const keys=['排名','代码','名称','选股收盘','次日收盘','次日涨跌幅%','结果'];
+    const focusRanks=new Map((review?.rows||[]).map(row=>[`${row['模型']}|${row['代码']}`,row['重点排名']]));
+    const keys=['排名','代码','名称','选股收盘','次日收盘','次日涨跌幅%','结果','额外精选'];
     return '<div class="wrap"><table><thead><tr>'+keys.map(key=>`<th>${key==='排名'?'选股时排名':esc(key)}</th>`).join('')+
-        '</tr></thead><tbody>'+rows.map(row=>'<tr>'+keys.map(key=>{
+        '</tr></thead><tbody>'+rows.map(row=>{const focusRank=focusRanks.get(`${row['模型']}|${row['代码']}`);return `<tr${focusRank!=null?' class="focus-history-row"':''}>`+keys.map(key=>{
+            if(key==='额外精选')return '<td>'+(focusRank!=null?'<span class="focus-history-badge">★ 第'+esc(focusRank)+'</span>':'—')+'</td>';
             const value=row[key],cls=key==='次日涨跌幅%'?(Number(value)>0?'pos':(Number(value)<0?'neg':'flat')):'';
             return `<td class="${cls}">${esc(value)}</td>`;
-        }).join('')+'</tr>').join('')+'</tbody></table></div>';
+        }).join('')+'</tr>'}).join('')+'</tbody></table></div>';
 }
 function drawPerformance(perf){
     performanceData=perf;
@@ -125,7 +128,8 @@ function drawPerformance(perf){
     const sessions=history.map((session,i)=>{
         const rows=(session.rows||[]).filter(row=>row['模型']===performanceModel);
         const q=performanceSummary(rows);
-        return `<details class="session" ${i===0?'open':''}><summary><strong>选股日 ${esc(session['选股日'])} → 结果日 ${esc(session['结果日'])}</strong><span>有效结果 ${q.valid}/${q.total} 只</span></summary><div class="metrics"><span class="metric">上涨率 ${performancePercent(q.upRate)}</span><span class="metric">平均涨幅 ${performancePercent(q.average)}</span><span class="metric">上涨 ${q.up}</span><span class="metric">下跌 ${q.down}</span><span class="metric">涨停 ${q.limitUp}</span></div>${focusReview(session,performanceModel)}<h3>逐股结果</h3>${performanceTable(rows)}</details>`;
+        const market=session.market_context?.state?`<span class="metric">大盘 ${esc(session.market_context.state)}</span>`:'';
+        return `<details class="session" ${i===0?'open':''}><summary><strong>选股日 ${esc(session['选股日'])} → 结果日 ${esc(session['结果日'])}</strong><span>有效结果 ${q.valid}/${q.total} 只</span></summary><div class="metrics">${market}<span class="metric">上涨率 ${performancePercent(q.upRate)}</span><span class="metric">平均涨幅 ${performancePercent(q.average)}</span><span class="metric">上涨 ${q.up}</span><span class="metric">下跌 ${q.down}</span><span class="metric">涨停 ${q.limitUp}</span></div>${focusReview(session,performanceModel)}<h3>逐股结果</h3>${performanceTable(rows,session["重点盯盘"])}</details>`;
     }).join('');
     performancePanel.innerHTML=`<p class="note">仅统计当前模型正式入选股票在下一个交易日的最终表现，最多保留3个工作日。选股时排名沿用当时保存的顺序。</p>${sessions}`;
 }
